@@ -1,0 +1,23 @@
+name: devshare
+description: Aplicación móvil DevShare.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.18.3
+  flutter_dotenv: ^6.0.0
+  youtube_player_flutter: ^10.0.1
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - DevShare.png
+    - .env
