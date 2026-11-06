@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../app/app_theme.dart';
@@ -18,11 +19,13 @@ class _AuthPageState extends State<AuthPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirmation = TextEditingController();
+
   bool _isRegistering = false;
   bool _hidePassword = true;
   bool _hideConfirmation = true;
   bool _acceptedTerms = false;
   bool _submitting = false;
+
   final _auth = AuthRepository();
 
   @override
@@ -36,6 +39,7 @@ class _AuthPageState extends State<AuthPage> {
 
   void _switchMode(bool register) {
     if (_isRegistering == register) return;
+
     setState(() {
       _isRegistering = register;
       _formKey.currentState?.reset();
@@ -45,31 +49,84 @@ class _AuthPageState extends State<AuthPage> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
+
     if (!_formKey.currentState!.validate()) return;
+
     if (_isRegistering && !_acceptedTerms) {
       _showMessage('Acepta los términos para crear tu cuenta.');
       return;
     }
+
     setState(() => _submitting = true);
+
     try {
-      if (BackendConfig.isConfigured) {
-        if (_isRegistering) {
-          final result = await _auth.register(email: _email.text, password: _password.text, displayName: _name.text);
-          if (!mounted) return;
-          if (result.session == null) {
-            _showMessage('Cuenta creada. Revisa tu correo para confirmar el registro.');
-            return;
-          }
-        } else {
-          await _auth.signIn(_email.text, _password.text);
-        }
+      // No continuar ni abrir HomePage si Supabase no está configurado.
+      if (!BackendConfig.isConfigured) {
+        throw StateError(
+          'Supabase no está configurado. Revisa SUPABASE_URL y '
+          'SUPABASE_PUBLISHABLE_KEY en backend_config.dart.',
+        );
       }
+
+      if (_isRegistering) {
+        debugPrint('========== REGISTRO DE USUARIO ==========');
+        debugPrint('Conectando con Supabase Auth...');
+
+        final result = await _auth.register(
+          email: _email.text.trim(),
+          password: _password.text,
+          displayName: _name.text.trim(),
+        );
+
+        debugPrint('Registro enviado correctamente.');
+        debugPrint('Usuario creado: ${result.user != null}');
+        debugPrint('Sesión creada: ${result.session != null}');
+        debugPrint('=========================================');
+
+        if (!mounted) return;
+
+        if (result.session == null) {
+          _showMessage(
+            'Cuenta creada. Revisa tu correo para confirmar el registro.',
+          );
+          return;
+        }
+      } else {
+        debugPrint('========== INICIO DE SESIÓN ==========');
+
+        await _auth.signIn(
+          _email.text.trim(),
+          _password.text,
+        );
+
+        debugPrint('Inicio de sesión exitoso.');
+        debugPrint('======================================');
+      }
+
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => const HomePage()));
-    } catch (error) {
-      if (mounted) _showMessage(error.toString());
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => const HomePage(),
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('');
+      debugPrint('========== ERROR DE AUTENTICACIÓN ==========');
+      debugPrint('ERROR: $error');
+      debugPrint('TIPO: ${error.runtimeType}');
+      debugPrint('STACKTRACE:');
+      debugPrint(stackTrace.toString());
+      debugPrint('=============================================');
+      debugPrint('');
+
+      if (mounted) {
+        _showMessage(error.toString());
+      }
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
     }
   }
 
@@ -86,20 +143,27 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   String? _required(String? value, String label) {
-    if (value == null || value.trim().isEmpty) return 'Ingresa $label.';
+    if (value == null || value.trim().isEmpty) {
+      return 'Ingresa $label.';
+    }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final registering = _isRegistering;
+
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0A1D32), AppColors.navy, Color(0xFF081120)],
+            colors: [
+              Color(0xFF0A1D32),
+              AppColors.navy,
+              Color(0xFF081120),
+            ],
           ),
         ),
         child: SafeArea(
@@ -197,12 +261,15 @@ class _AuthPageState extends State<AuthPage> {
                                       value,
                                       'tu correo',
                                     );
+
                                     if (required != null) return required;
+
                                     if (!RegExp(
                                       r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
                                     ).hasMatch(value!.trim())) {
                                       return 'Revisa el formato de tu correo.';
                                     }
+
                                     return null;
                                   },
                                 ),
@@ -220,10 +287,13 @@ class _AuthPageState extends State<AuthPage> {
                                       value,
                                       'tu contraseña',
                                     );
+
                                     if (required != null) return required;
+
                                     if (value!.length < 8) {
                                       return 'Usa al menos 8 caracteres.';
                                     }
+
                                     return null;
                                   },
                                   suffix: IconButton(
@@ -253,10 +323,13 @@ class _AuthPageState extends State<AuthPage> {
                                         value,
                                         'la confirmación',
                                       );
+
                                       if (required != null) return required;
+
                                       if (value != _password.text) {
                                         return 'Las contraseñas no coinciden.';
                                       }
+
                                       return null;
                                     },
                                     suffix: IconButton(
@@ -275,21 +348,26 @@ class _AuthPageState extends State<AuthPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  CheckboxListTile(
-                                    value: _acceptedTerms,
-                                    onChanged: (value) => setState(
-                                      () => _acceptedTerms = value ?? false,
-                                    ),
-                                    contentPadding: EdgeInsets.zero,
-                                    controlAffinity:
-                                        ListTileControlAffinity.leading,
-                                    dense: true,
-                                    activeColor: AppColors.violet,
-                                    title: Text(
-                                      'Acepto los términos de uso y la política de privacidad.',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.72),
-                                        fontSize: 12,
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: CheckboxListTile(
+                                      value: _acceptedTerms,
+                                      onChanged: (value) => setState(
+                                        () => _acceptedTerms = value ?? false,
+                                      ),
+                                      contentPadding: EdgeInsets.zero,
+                                      controlAffinity:
+                                          ListTileControlAffinity.leading,
+                                      dense: true,
+                                      activeColor: AppColors.violet,
+                                      title: Text(
+                                        'Acepto los términos de uso y la política de privacidad.',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.72,
+                                          ),
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -422,7 +500,9 @@ class _BrandHeader extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: AppColors.blue.withValues(alpha: 0.38)),
+          border: Border.all(
+            color: AppColors.blue.withValues(alpha: 0.38),
+          ),
           boxShadow: [
             BoxShadow(
               color: AppColors.blue.withValues(alpha: 0.17),
@@ -450,7 +530,10 @@ class _BrandHeader extends StatelessWidget {
 }
 
 class _ModeSelector extends StatelessWidget {
-  const _ModeSelector({required this.registering, required this.onChanged});
+  const _ModeSelector({
+    required this.registering,
+    required this.onChanged,
+  });
 
   final bool registering;
   final ValueChanged<bool> onChanged;
@@ -507,7 +590,10 @@ class _ModeTab extends StatelessWidget {
         style: TextButton.styleFrom(
           foregroundColor: selected ? Colors.white : Colors.white60,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         child: Text(label, maxLines: 1),
       ),
@@ -562,8 +648,15 @@ class _AuthField extends StatelessWidget {
         style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF70869D), fontSize: 14),
-          prefixIcon: Icon(icon, color: AppColors.cyan, size: 20),
+          hintStyle: const TextStyle(
+            color: Color(0xFF70869D),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: AppColors.cyan,
+            size: 20,
+          ),
           suffixIcon: suffix,
           filled: true,
           fillColor: AppColors.field,
@@ -573,23 +666,35 @@ class _AuthField extends StatelessWidget {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+            borderSide: BorderSide(
+              color: Colors.white.withValues(alpha: 0.07),
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+            borderSide: BorderSide(
+              color: Colors.white.withValues(alpha: 0.07),
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: AppColors.cyan, width: 1.4),
+            borderSide: const BorderSide(
+              color: AppColors.cyan,
+              width: 1.4,
+            ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Color(0xFFFF788D)),
+            borderSide: const BorderSide(
+              color: Color(0xFFFF788D),
+            ),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Color(0xFFFF788D), width: 1.4),
+            borderSide: const BorderSide(
+              color: Color(0xFFFF788D),
+              width: 1.4,
+            ),
           ),
         ),
       ),
@@ -606,7 +711,7 @@ class _PrimaryButton extends StatelessWidget {
 
   final String label;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -637,11 +742,12 @@ class _PrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     ),
   );
 }
-
-
