@@ -1,12 +1,10 @@
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BackendConfig {
   BackendConfig._();
 
-  static String get url =>
-      (dotenv.env['SUPABASE_URL'] ?? '').trim();
+  static String get url => (dotenv.env['SUPABASE_URL'] ?? '').trim();
 
   static String get publishableKey =>
       (dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ?? '').trim();

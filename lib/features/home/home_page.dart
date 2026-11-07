@@ -16,5 +16,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) => _index == 0
       ? HomeFeed(onNavigate: (index) => setState(() => _index = index))
-      : MockupPage(index: _index, onNavigate: (index) => setState(() => _index = index));
+      : MockupPage(
+          index: _index,
+          onNavigate: (index) => setState(() => _index = index),
+        );
 }

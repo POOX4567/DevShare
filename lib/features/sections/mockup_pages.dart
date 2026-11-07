@@ -11,10 +11,10 @@ class MockupPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (index) {
-        1 => CommunityPage(onNavigate: onNavigate),
-        2 => CoursesPage(onNavigate: onNavigate),
-        3 => MessagesPage(onNavigate: onNavigate),
-        4 => ProfilePage(onNavigate: onNavigate),
-        _ => const SizedBox.shrink(),
-      };
+    1 => CommunityPage(onNavigate: onNavigate),
+    2 => CoursesPage(onNavigate: onNavigate),
+    3 => MessagesPage(onNavigate: onNavigate),
+    4 => ProfilePage(onNavigate: onNavigate),
+    _ => const SizedBox.shrink(),
+  };
 }

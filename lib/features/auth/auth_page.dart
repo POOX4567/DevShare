@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../app/app_theme.dart';
@@ -94,10 +93,7 @@ class _AuthPageState extends State<AuthPage> {
       } else {
         debugPrint('========== INICIO DE SESIÓN ==========');
 
-        await _auth.signIn(
-          _email.text.trim(),
-          _password.text,
-        );
+        await _auth.signIn(_email.text.trim(), _password.text);
 
         debugPrint('Inicio de sesión exitoso.');
         debugPrint('======================================');
@@ -106,9 +102,7 @@ class _AuthPageState extends State<AuthPage> {
       if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const HomePage(),
-        ),
+        MaterialPageRoute<void>(builder: (_) => const HomePage()),
       );
     } catch (error, stackTrace) {
       debugPrint('');
@@ -159,11 +153,7 @@ class _AuthPageState extends State<AuthPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A1D32),
-              AppColors.navy,
-              Color(0xFF081120),
-            ],
+            colors: [Color(0xFF0A1D32), AppColors.navy, Color(0xFF081120)],
           ),
         ),
         child: SafeArea(
@@ -375,9 +365,28 @@ class _AuthPageState extends State<AuthPage> {
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: TextButton(
-                                      onPressed: () => _showMessage(
-                                        'La recuperación de contraseña estará disponible próximamente.',
-                                      ),
+                                      onPressed: () async {
+                                        final email = _email.text.trim();
+                                        if (email.isEmpty ||
+                                            !email.contains('@')) {
+                                          _showMessage(
+                                            'Escribe tu correo para enviarte el enlace de recuperación.',
+                                          );
+                                          return;
+                                        }
+                                        try {
+                                          await _auth.resetPassword(email);
+                                          if (mounted)
+                                            _showMessage(
+                                              'Revisa tu correo: enviamos el enlace para recuperar tu contraseña.',
+                                            );
+                                        } catch (error) {
+                                          if (mounted)
+                                            _showMessage(
+                                              'No se pudo enviar el enlace: $error',
+                                            );
+                                        }
+                                      },
                                       style: TextButton.styleFrom(
                                         foregroundColor: AppColors.cyan,
                                         padding: const EdgeInsets.symmetric(
@@ -500,9 +509,7 @@ class _BrandHeader extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppColors.blue.withValues(alpha: 0.38),
-          ),
+          border: Border.all(color: AppColors.blue.withValues(alpha: 0.38)),
           boxShadow: [
             BoxShadow(
               color: AppColors.blue.withValues(alpha: 0.17),
@@ -530,10 +537,7 @@ class _BrandHeader extends StatelessWidget {
 }
 
 class _ModeSelector extends StatelessWidget {
-  const _ModeSelector({
-    required this.registering,
-    required this.onChanged,
-  });
+  const _ModeSelector({required this.registering, required this.onChanged});
 
   final bool registering;
   final ValueChanged<bool> onChanged;
@@ -579,9 +583,7 @@ class _ModeTab extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
         gradient: selected
-            ? const LinearGradient(
-                colors: [AppColors.violet, AppColors.blue],
-              )
+            ? const LinearGradient(colors: [AppColors.violet, AppColors.blue])
             : null,
         borderRadius: BorderRadius.circular(12),
       ),
@@ -590,10 +592,7 @@ class _ModeTab extends StatelessWidget {
         style: TextButton.styleFrom(
           foregroundColor: selected ? Colors.white : Colors.white60,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          textStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
         ),
         child: Text(label, maxLines: 1),
       ),
@@ -648,15 +647,8 @@ class _AuthField extends StatelessWidget {
         style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(
-            color: Color(0xFF70869D),
-            fontSize: 14,
-          ),
-          prefixIcon: Icon(
-            icon,
-            color: AppColors.cyan,
-            size: 20,
-          ),
+          hintStyle: const TextStyle(color: Color(0xFF70869D), fontSize: 14),
+          prefixIcon: Icon(icon, color: AppColors.cyan, size: 20),
           suffixIcon: suffix,
           filled: true,
           fillColor: AppColors.field,
@@ -666,35 +658,23 @@ class _AuthField extends StatelessWidget {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(
-              color: Colors.white.withValues(alpha: 0.07),
-            ),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(
-              color: Colors.white.withValues(alpha: 0.07),
-            ),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: AppColors.cyan,
-              width: 1.4,
-            ),
+            borderSide: const BorderSide(color: AppColors.cyan, width: 1.4),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: Color(0xFFFF788D),
-            ),
+            borderSide: const BorderSide(color: Color(0xFFFF788D)),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: Color(0xFFFF788D),
-              width: 1.4,
-            ),
+            borderSide: const BorderSide(color: Color(0xFFFF788D), width: 1.4),
           ),
         ),
       ),
@@ -742,10 +722,7 @@ class _PrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
     ),

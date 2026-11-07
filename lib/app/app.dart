@@ -39,9 +39,8 @@ class _AuthGate extends StatelessWidget {
     if (client.auth.currentSession != null) return const HomePage();
     return StreamBuilder<AuthState>(
       stream: client.auth.onAuthStateChange,
-      builder: (context, snapshot) => snapshot.data?.session == null
-          ? const AuthPage()
-          : const HomePage(),
+      builder: (context, snapshot) =>
+          snapshot.data?.session == null ? const AuthPage() : const HomePage(),
     );
   }
 }
