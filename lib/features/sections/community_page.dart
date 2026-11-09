@@ -7,23 +7,24 @@ import 'section_components.dart';
 
 class CommunityPage extends StatelessWidget {
   const CommunityPage({super.key, required this.onNavigate});
+
   final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) => SectionFrame(
-    title: 'Comunidades',
-    selected: 1,
-    onNavigate: onNavigate,
-    children: [
-      const _CommunityBrowser(),
-      const SizedBox(height: 12),
-      BackendCollection(
-        title: 'Eventos y transmisiones',
-        load: () => FeatureRepository().events(),
-        icon: Icons.event_outlined,
-      ),
-    ],
-  );
+        title: 'Comunidades',
+        selected: 1,
+        onNavigate: onNavigate,
+        children: [
+          const _CommunityBrowser(),
+          const SizedBox(height: 12),
+          BackendCollection(
+            title: 'Eventos y transmisiones',
+            load: () => FeatureRepository().events(),
+            icon: Icons.event_outlined,
+          ),
+        ],
+      );
 }
 
 class _CommunitySummary {
@@ -48,7 +49,9 @@ class _CommunityBrowser extends StatefulWidget {
 class _CommunityBrowserState extends State<_CommunityBrowser> {
   final _repository = FeatureRepository();
   final _search = TextEditingController();
+
   late Future<List<_CommunitySummary>> _communities;
+
   String _category = 'Todas';
 
   @override
@@ -62,26 +65,35 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
       _repository.communities(),
       _repository.communityMembers(),
     ]);
+
     final communities = results[0];
     final memberships = results[1];
+
     final userId = BackendConfig.client.auth.currentUser?.id;
+
     return communities.map((community) {
       final id = community['id']?.toString();
+
       final members = memberships
           .where((member) => member['community_id']?.toString() == id)
           .toList();
+
       return _CommunitySummary(
         row: community,
         memberCount: members.length,
-        isMember:
-            userId != null &&
-            members.any((member) => member['user_id']?.toString() == userId),
+        isMember: userId != null &&
+            members.any(
+              (member) => member['user_id']?.toString() == userId,
+            ),
       );
     }).toList();
   }
 
   void _reload() {
-    setState(() => _communities = _loadCommunities());
+    if (!mounted) return;
+    setState(() {
+      _communities = _loadCommunities();
+    });
   }
 
   @override
@@ -92,18 +104,24 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
 
   Future<void> _createCommunity() async {
     final values = await _showCommunityForm(context);
-    if (values == null) return;
+
+    if (!mounted || values == null) return;
+
     try {
       await _repository.createCommunity(
         name: values['name']!,
         description: values['description']!,
         category: values['category']!,
       );
+
       if (!mounted) return;
+
       _reload();
       _message('Comunidad creada.');
     } catch (error) {
-      if (mounted) _message('No se pudo crear la comunidad: $error');
+      if (mounted) {
+        _message('No se pudo crear la comunidad: $error');
+      }
     }
   }
 
@@ -116,12 +134,17 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
         onChanged: _reload,
       ),
     );
+
     if (mounted) _reload();
   }
 
-  void _message(String message) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
+  void _message(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,9 +162,12 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Padding(
             padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
           );
         }
+
         if (snapshot.hasError) {
           return SectionCard(
             title: 'No se pudieron cargar las comunidades',
@@ -156,21 +182,28 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
         }
 
         final all = snapshot.data ?? const <_CommunitySummary>[];
-        final categories =
-            all
-                .map((item) => item.row['category']?.toString().trim() ?? '')
-                .where((value) => value.isNotEmpty)
-                .toSet()
-                .toList()
-              ..sort();
+
+        final categories = all
+            .map(
+              (item) => item.row['category']?.toString().trim() ?? '',
+            )
+            .where((value) => value.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+
         final query = _search.text.trim().toLowerCase();
+
         final visible = all.where((community) {
           final row = community.row;
+
           final matchesCategory =
               _category == 'Todas' || row['category'] == _category;
+
           final searchText =
               '${row['name'] ?? ''} ${row['description'] ?? ''} ${row['category'] ?? ''}'
                   .toLowerCase();
+
           return matchesCategory && searchText.contains(query);
         }).toList();
 
@@ -179,7 +212,9 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
           children: [
             Row(
               children: [
-                const Expanded(child: SectionHeading('Comunidades')),
+                const Expanded(
+                  child: SectionHeading('Comunidades'),
+                ),
                 FilledButton.icon(
                   onPressed: _createCommunity,
                   icon: const Icon(Icons.add, size: 18),
@@ -217,8 +252,11 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
                         child: ChoiceChip(
                           label: Text(category),
                           selected: _category == category,
-                          onSelected: (_) =>
-                              setState(() => _category = category),
+                          onSelected: (_) {
+                            setState(() {
+                              _category = category;
+                            });
+                          },
                         ),
                       ),
                   ],
@@ -249,7 +287,10 @@ class _CommunityBrowserState extends State<_CommunityBrowser> {
 }
 
 class _CommunityTile extends StatelessWidget {
-  const _CommunityTile({required this.community, required this.onTap});
+  const _CommunityTile({
+    required this.community,
+    required this.onTap,
+  });
 
   final _CommunitySummary community;
   final VoidCallback onTap;
@@ -257,6 +298,7 @@ class _CommunityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final row = community.row;
+
     final name = row['name']?.toString() ?? 'Comunidad';
     final description = row['description']?.toString().trim() ?? '';
     final category = row['category']?.toString() ?? 'General';
@@ -278,7 +320,10 @@ class _CommunityTile extends StatelessWidget {
                   color: AppColors.field,
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: const Icon(Icons.groups_outlined, color: AppColors.cyan),
+                child: const Icon(
+                  Icons.groups_outlined,
+                  color: AppColors.cyan,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -289,7 +334,9 @@ class _CommunityTile extends StatelessWidget {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     if (description.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -307,7 +354,10 @@ class _CommunityTile extends StatelessWidget {
                     Wrap(
                       spacing: 10,
                       children: [
-                        _MetaLabel(icon: Icons.sell_outlined, text: category),
+                        _MetaLabel(
+                          icon: Icons.sell_outlined,
+                          text: category,
+                        ),
                         _MetaLabel(
                           icon: Icons.people_outline,
                           text: '${community.memberCount} miembros',
@@ -320,12 +370,18 @@ class _CommunityTile extends StatelessWidget {
               if (community.isMember)
                 const Padding(
                   padding: EdgeInsets.only(left: 6),
-                  child: Icon(Icons.check_circle, color: AppColors.cyan),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: AppColors.cyan,
+                  ),
                 )
               else
                 const Padding(
                   padding: EdgeInsets.only(left: 6),
-                  child: Icon(Icons.chevron_right, color: Colors.white70),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: Colors.white70,
+                  ),
                 ),
             ],
           ),
@@ -336,19 +392,32 @@ class _CommunityTile extends StatelessWidget {
 }
 
 class _MetaLabel extends StatelessWidget {
-  const _MetaLabel({required this.icon, required this.text});
+  const _MetaLabel({
+    required this.icon,
+    required this.text,
+  });
+
   final IconData icon;
   final String text;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 13, color: AppColors.cyan),
-      const SizedBox(width: 4),
-      Text(text, style: const TextStyle(fontSize: 10)),
-    ],
-  );
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 13,
+          color: AppColors.cyan,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 10),
+        ),
+      ],
+    );
+  }
 }
 
 class _CommunityDetailsDialog extends StatefulWidget {
@@ -367,119 +436,196 @@ class _CommunityDetailsDialog extends StatefulWidget {
       _CommunityDetailsDialogState();
 }
 
-class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
-  late Map<String, dynamic> _community = Map<String, dynamic>.from(
-    widget.community.row,
-  );
+class _CommunityDetailsDialogState
+    extends State<_CommunityDetailsDialog> {
+  late Map<String, dynamic> _community =
+      Map<String, dynamic>.from(widget.community.row);
+
   late Future<List<Map<String, dynamic>>> _members;
+
   late bool _joined = widget.community.isMember;
+
   bool _busy = false;
 
   String get _id => _community['id'].toString();
-  String? get _userId => BackendConfig.client.auth.currentUser?.id;
+
+  String? get _userId =>
+      BackendConfig.client.auth.currentUser?.id;
+
   bool get _isOwner =>
-      _userId != null && _community['owner_id']?.toString() == _userId;
+      _userId != null &&
+      _community['owner_id']?.toString() == _userId;
 
   @override
   void initState() {
     super.initState();
-    _members = widget.repository.communityMembers(communityId: _id);
+    _members = widget.repository.communityMembers(
+      communityId: _id,
+    );
   }
 
   Future<void> _toggleMembership() async {
+    if (_busy) return;
+
     setState(() => _busy = true);
+
     try {
       if (_joined) {
         await widget.repository.leaveCommunity(_id);
       } else {
         await widget.repository.joinCommunity(_id);
       }
+
       if (!mounted) return;
+
       setState(() {
         _joined = !_joined;
-        _members = widget.repository.communityMembers(communityId: _id);
+        _members = widget.repository.communityMembers(
+          communityId: _id,
+        );
       });
+
       widget.onChanged();
     } catch (error) {
-      if (mounted) _message('No se pudo actualizar tu membresía: $error');
+      if (mounted) {
+        _message('No se pudo actualizar tu membresía: $error');
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _edit() async {
-    final values = await _showCommunityForm(context, community: _community);
-    if (values == null) return;
+    if (_busy) return;
+
+    final values = await _showCommunityForm(
+      context,
+      community: _community,
+    );
+
+    if (!mounted || values == null) return;
+
     setState(() => _busy = true);
+
     try {
       await widget.repository.updateCommunity(_id, values);
+
       if (!mounted) return;
-      setState(() => _community = {..._community, ...values});
+
+      setState(() {
+        _community = {..._community, ...values};
+      });
+
       widget.onChanged();
       _message('Comunidad actualizada.');
     } catch (error) {
-      if (mounted) _message('No se pudo editar la comunidad: $error');
+      if (mounted) {
+        _message('No se pudo editar la comunidad: $error');
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _delete() async {
+    if (_busy) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Eliminar comunidad'),
         content: const Text(
-          'Se eliminará la comunidad y sus membresías. Esta acción no se puede deshacer.',
+          'Se eliminará la comunidad y sus membresías. '
+          'Esta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () {
+              Navigator.of(dialogContext).pop(false);
+            },
             child: const Text('Cancelar'),
           ),
           FilledButton.tonal(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              Navigator.of(dialogContext).pop(true);
+            },
             child: const Text('Eliminar'),
           ),
         ],
       ),
     );
-    if (confirmed != true) return;
+
+    if (!mounted || confirmed != true) return;
+
     setState(() => _busy = true);
+
     try {
       await widget.repository.deleteCommunity(_id);
+
       widget.onChanged();
-      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (error) {
-      if (mounted) _message('No se pudo eliminar la comunidad: $error');
+      if (mounted) {
+        _message('No se pudo eliminar la comunidad: $error');
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
-  void _message(String text) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(text)));
+  void _message(String text) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(text)),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
     final createdAt = DateTime.tryParse(
       _community['created_at']?.toString() ?? '',
     );
+
     return AlertDialog(
       titlePadding: const EdgeInsets.fromLTRB(20, 18, 8, 0),
       title: Row(
         children: [
-          Expanded(child: Text(_community['name']?.toString() ?? 'Comunidad')),
+          Expanded(
+            child: Text(
+              _community['name']?.toString() ?? 'Comunidad',
+            ),
+          ),
           if (_isOwner)
             PopupMenuButton<String>(
+              enabled: !_busy,
               onSelected: (value) {
-                if (value == 'edit') _edit();
-                if (value == 'delete') _delete();
+                if (value == 'edit') {
+                  _edit();
+                }
+
+                if (value == 'delete') {
+                  _delete();
+                }
               },
               itemBuilder: (_) => const [
-                PopupMenuItem(value: 'edit', child: Text('Editar')),
-                PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Editar'),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Eliminar'),
+                ),
               ],
             ),
         ],
@@ -496,7 +642,10 @@ class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
                 runSpacing: 8,
                 children: [
                   Chip(
-                    avatar: const Icon(Icons.sell_outlined, size: 16),
+                    avatar: const Icon(
+                      Icons.sell_outlined,
+                      size: 16,
+                    ),
                     label: Text(
                       _community['category']?.toString() ?? 'General',
                     ),
@@ -526,20 +675,27 @@ class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const LinearProgressIndicator();
                   }
+
                   if (snapshot.hasError) {
                     return Text(
-                      'No se pudieron cargar los miembros: ${snapshot.error}',
+                      'No se pudieron cargar los miembros: '
+                      '${snapshot.error}',
                     );
                   }
+
                   final members = snapshot.data ?? [];
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SectionHeading('Miembros (${members.length})'),
+                      SectionHeading(
+                        'Miembros (${members.length})',
+                      ),
                       if (members.isEmpty)
                         const SectionCard(
                           title: 'Todavía no hay miembros',
-                          subtitle: 'Puedes ser la primera persona en unirte.',
+                          subtitle:
+                              'Puedes ser la primera persona en unirte.',
                           icon: Icons.people_outline,
                         ),
                       for (final member in members)
@@ -547,7 +703,7 @@ class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
                           member: member,
                           isOwner:
                               member['user_id']?.toString() ==
-                              _community['owner_id']?.toString(),
+                                  _community['owner_id']?.toString(),
                         ),
                     ],
                   );
@@ -559,7 +715,9 @@ class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context),
+          onPressed: _busy
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('Cerrar'),
         ),
         FilledButton.icon(
@@ -567,9 +725,15 @@ class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
           icon: _busy
               ? const SizedBox.square(
                   dimension: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
                 )
-              : Icon(_joined ? Icons.logout : Icons.group_add_outlined),
+              : Icon(
+                  _joined
+                      ? Icons.logout
+                      : Icons.group_add_outlined,
+                ),
           label: Text(_joined ? 'Salir' : 'Unirme'),
         ),
       ],
@@ -578,67 +742,155 @@ class _CommunityDetailsDialogState extends State<_CommunityDetailsDialog> {
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member, required this.isOwner});
+  const _MemberTile({
+    required this.member,
+    required this.isOwner,
+  });
+
   final Map<String, dynamic> member;
   final bool isOwner;
 
   @override
   Widget build(BuildContext context) {
-    final profile = member['profiles'] as Map<String, dynamic>? ?? {};
+    final profile =
+        member['profiles'] as Map<String, dynamic>? ?? {};
+
     final userId = member['user_id']?.toString() ?? '';
+
     final name = profile['display_name']?.toString().trim();
+
     final label = name?.isNotEmpty == true
         ? name!
-        : (userId.length > 12 ? userId.substring(0, 12) : userId);
+        : (userId.length > 12
+            ? userId.substring(0, 12)
+            : userId);
+
     final role = member['role']?.toString() ?? 'member';
+
+    final avatarPath = profile['avatar_path']?.toString() ?? '';
+
+    final hasAvatar = avatarPath.startsWith('http');
+
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
         radius: 17,
-        backgroundImage:
-            profile['avatar_path']?.toString().startsWith('http') == true
-            ? NetworkImage(profile['avatar_path'].toString())
+        backgroundImage: hasAvatar
+            ? NetworkImage(avatarPath)
             : null,
-        child: profile['avatar_path']?.toString().startsWith('http') == true
+        child: hasAvatar
             ? null
-            : const Icon(Icons.person_outline, size: 18),
+            : const Icon(
+                Icons.person_outline,
+                size: 18,
+              ),
       ),
-      title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: isOwner
           ? const Text(
               'Propietario',
-              style: TextStyle(color: AppColors.cyan, fontSize: 11),
+              style: TextStyle(
+                color: AppColors.cyan,
+                fontSize: 11,
+              ),
             )
           : Text(
               role,
-              style: const TextStyle(color: Colors.white60, fontSize: 11),
+              style: const TextStyle(
+                color: Colors.white60,
+                fontSize: 11,
+              ),
             ),
     );
   }
 }
 
+/// Abre el formulario de creación o edición.
+/// Los controladores pertenecen al State del diálogo y se liberan
+/// cuando Flutter desmonta el formulario.
 Future<Map<String, String>?> _showCommunityForm(
   BuildContext context, {
   Map<String, dynamic>? community,
 }) {
-  final name = TextEditingController(
-    text: community?['name']?.toString() ?? '',
-  );
-  final description = TextEditingController(
-    text: community?['description']?.toString() ?? '',
-  );
-  final category = TextEditingController(
-    text: community?['category']?.toString() ?? 'General',
-  );
-  final formKey = GlobalKey<FormState>();
-
   return showDialog<Map<String, String>>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(community == null ? 'Crear comunidad' : 'Editar comunidad'),
+    builder: (_) => _CommunityFormDialog(
+      community: community,
+    ),
+  );
+}
+
+class _CommunityFormDialog extends StatefulWidget {
+  const _CommunityFormDialog({
+    this.community,
+  });
+
+  final Map<String, dynamic>? community;
+
+  @override
+  State<_CommunityFormDialog> createState() =>
+      _CommunityFormDialogState();
+}
+
+class _CommunityFormDialogState
+    extends State<_CommunityFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _name;
+  late final TextEditingController _description;
+  late final TextEditingController _category;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _name = TextEditingController(
+      text: widget.community?['name']?.toString() ?? '',
+    );
+
+    _description = TextEditingController(
+      text: widget.community?['description']?.toString() ?? '',
+    );
+
+    _category = TextEditingController(
+      text: widget.community?['category']?.toString() ?? 'General',
+    );
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    _category.dispose();
+
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+
+    Navigator.of(context).pop({
+      'name': _name.text.trim(),
+      'category': _category.text.trim(),
+      'description': _description.text.trim(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final editing = widget.community != null;
+
+    return AlertDialog(
+      title: Text(
+        editing ? 'Editar comunidad' : 'Crear comunidad',
+      ),
       content: Form(
-        key: formKey,
+        key: _formKey,
         child: SizedBox(
           width: 420,
           child: SingleChildScrollView(
@@ -646,22 +898,28 @@ Future<Map<String, String>?> _showCommunityForm(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
-                  controller: name,
+                  controller: _name,
                   autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Nombre'),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Escribe un nombre.'
-                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre',
+                  ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty
+                          ? 'Escribe un nombre.'
+                          : null,
                 ),
                 TextFormField(
-                  controller: category,
-                  decoration: const InputDecoration(labelText: 'Categoría'),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Escribe una categoría.'
-                      : null,
+                  controller: _category,
+                  decoration: const InputDecoration(
+                    labelText: 'Categoría',
+                  ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty
+                          ? 'Escribe una categoría.'
+                          : null,
                 ),
                 TextFormField(
-                  controller: description,
+                  controller: _description,
                   maxLines: 4,
                   decoration: const InputDecoration(
                     labelText: 'Descripción',
@@ -675,28 +933,19 @@ Future<Map<String, String>?> _showCommunityForm(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          onPressed: () {
-            if (!formKey.currentState!.validate()) return;
-            Navigator.pop(context, {
-              'name': name.text.trim(),
-              'category': category.text.trim(),
-              'description': description.text.trim(),
-            });
-          },
-          child: Text(community == null ? 'Crear' : 'Guardar'),
+          onPressed: _save,
+          child: Text(editing ? 'Guardar' : 'Crear'),
         ),
       ],
-    ),
-  ).whenComplete(() {
-    name.dispose();
-    description.dispose();
-    category.dispose();
-  });
+    );
+  }
 }
 
 String _date(DateTime value) =>
-    '${value.toLocal().year}-${value.toLocal().month.toString().padLeft(2, '0')}-${value.toLocal().day.toString().padLeft(2, '0')}';
+    '${value.toLocal().year}-'
+    '${value.toLocal().month.toString().padLeft(2, '0')}-'
+    '${value.toLocal().day.toString().padLeft(2, '0')}';

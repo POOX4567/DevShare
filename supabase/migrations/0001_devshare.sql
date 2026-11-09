@@ -10,11 +10,24 @@ create function public.handle_new_user() returns trigger language plpgsql securi
 begin insert into public.profiles(id,display_name) values(new.id,coalesce(new.raw_user_meta_data->>'display_name','')); return new; end; $$;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
 
-create table public.posts (
-  id uuid primary key default gen_random_uuid(), author_id uuid not null references public.profiles(id) on delete cascade,
-  body text not null default '', media_path text, youtube_url text, is_live boolean not null default false,
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  constraint posts_content_required check(length(trim(body))>0 or media_path is not null or youtube_url is not null)
+CREATE TABLE public.posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    author_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    body TEXT NOT NULL DEFAULT '',
+    media_path TEXT,
+    youtube_url TEXT,
+    project_title TEXT,
+    project_url TEXT,
+    is_live BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT posts_content_required
+    CHECK (
+        length(trim(body)) > 0
+        OR media_path IS NOT NULL
+        OR youtube_url IS NOT NULL
+    )
 );
 create table public.comments (
   id uuid primary key default gen_random_uuid(), post_id uuid not null references public.posts(id) on delete cascade,
