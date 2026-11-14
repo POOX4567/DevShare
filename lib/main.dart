@@ -14,7 +14,7 @@ Future<void> main() async {
     final key = (dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ?? '').trim();
 
     if (url.isEmpty || key.isEmpty) {
-      throw Exception('Faltan SUPABASE_URL o SUPABASE_PUBLISHABLE_KEY en .env');
+      throw Exception('Faltan las credenciales de Supabase en .env');
     }
 
     final uri = Uri.tryParse(url);
